@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id            Int           @id @default(autoincrement())
+  nombre        String        @db.VarChar(100)
+  correo        String        @unique @db.VarChar(150)
+  password_hash String        @db.VarChar(255)
+  rol           Rol           @default(cliente)
+  created_at    DateTime?     @default(now()) @db.Timestamp(0)
+  updated_at    DateTime?     @updatedAt @db.Timestamp(0)
+
+  reservaciones Reservacion[]
+
+  @@map("usuarios")
+}
+
+model Mesa {
+  id            Int           @id @default(autoincrement())
+  numero        Int           @unique
+  capacidad     Int
+  ubicacion     String?       @default("Salón principal") @db.VarChar(100)
+  activa        Boolean?      @default(true)
+  created_at    DateTime?     @default(now()) @db.Timestamp(0)
+
+  reservaciones Reservacion[]
+
+  @@map("mesas")
+}
+
+model Reservacion {
+  id           Int       @id @default(autoincrement())
+  usuario_id   Int
+  mesa_id      Int
+  fecha        DateTime  @db.Date
+  hora_inicio  DateTime  @db.Time(0)
+  hora_fin     DateTime  @db.Time(0)
+  num_personas Int
+  estado       Estado    @default(pendiente)
+  notas        String?   @db.Text
+  created_at   DateTime? @default(now()) @db.Timestamp(0)
+  updated_at   DateTime? @updatedAt @db.Timestamp(0)
+
+  usuario      Usuario   @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  mesa         Mesa      @relation(fields: [mesa_id], references: [id], onDelete: Cascade)
+
+  @@index([fecha, mesa_id], map: "idx_reservaciones_fecha_mesa")
+  @@index([usuario_id], map: "idx_reservaciones_usuario")
+  @@map("reservaciones")
+}
+
+enum Rol {
+  cliente
+  admin
+}
+
+enum Estado {
+  pendiente
+  confirmada
+  cancelada
+  completada
+}
